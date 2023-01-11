@@ -239,8 +239,15 @@ const pullPackager = async () => {
 
     const translations = await pullResource('packagerjson', 0.5);
 
-    // Write the individual JSON files
+    // Delete old JSON files. Some languages that were previously supported might no longer be.
     const localesDirectory = pathUtil.join(packager, 'src', 'locales');
+    for (const name of fs.readdirSync(localesDirectory)) {
+        if (name.endsWith('.json') && name !== 'en.json') {
+            fs.unlinkSync(pathUtil.join(localesDirectory, name));
+        }
+    }
+
+    // Write the individual JSON files
     for (const [locale, messages] of Object.entries(translations)) {
         const path = pathUtil.join(localesDirectory, `${locale}.json`);
         fs.writeFileSync(path, JSON.stringify(messages, null, 4));
