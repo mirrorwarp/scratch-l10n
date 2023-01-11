@@ -7,3 +7,9 @@
 .npmignore
 .travis.yml
 webpack.config.js
+
+# TW: Unused when published
+www
+editor
+images
+.github

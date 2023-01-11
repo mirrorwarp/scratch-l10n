@@ -43,6 +43,7 @@ import * as path from 'path';
 import {sync as mkdirpSync} from 'mkdirp';
 import defaultsDeep from 'lodash.defaultsdeep';
 import locales from '../src/supported-locales.js';
+import allUsedIds from './tw-all-used-ids.json';
 
 const MSGS_DIR = './locales/';
 mkdirpSync(MSGS_DIR);
@@ -54,6 +55,12 @@ const combineJson = (component) => {
             let langData = JSON.parse(
                 fs.readFileSync(path.resolve('editor', component, lang + '.json'), 'utf8')
             );
+            // TW: Remove messages that we don't use.
+            for (const key of Object.keys(langData)) {
+                if (!allUsedIds.includes(key)) {
+                    delete langData[key];
+                }
+            }
             collection[lang] = langData;
         } catch (e) {
             missingLocales.push(component + ':' + lang + '\n');

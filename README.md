@@ -1,5 +1,32 @@
-# scratch-l10n
+# @turbowarp/scratch-l10n
 
+This is a modified version of scratch-l10n with translations that aren't used by TurboWarp removed.
+
+## Scripts
+
+This repository also contains scripts that we use to maintain TurboWarp's translation system. They assume you have a directory laid out with `scratch-l10n`, `scratch-gui`, `turbowarp-desktop`, and `packager` in the same folder.
+
+Download all resources from Transifex:
+
+```bash
+npm run tw:pull
+```
+
+Upload scratch-gui to Transifex:
+
+```bash
+npm run tw:push
+```
+
+Publish to npm:
+
+```bash
+npm run tw:publish
+```
+
+Transifex API token can either be stored in the `TX_TOKEN` environment variable or the `.tx_token` file (ignored by git).
+
+<!--
 Translation of all Scratch projects is managed on the Transifex service: https://www.transifex.com/llk/public
 
 This repository collects translations submitted to the Scratch projects on Transifex. **Please do not submit PRs. If you would like to contribute translations, please sign up to translate on Transifex.**
@@ -34,3 +61,4 @@ In general, changes that require a PR (new functionality, new language) should i
 #### Deprecations
 
 We are moving away from using the `tx` cli, so the `.tx/config` file will eventually be deprecated.
+-->
