@@ -183,6 +183,10 @@ const pullResource = async (resource, requiredCompletion) => {
     return result;
 };
 
+/**
+ * @param {string} path
+ * @returns {boolean}
+ */
 const isDirectorySync = path => {
     try {
         const stat = fs.statSync(path);
@@ -193,6 +197,20 @@ const isDirectorySync = path => {
         }
         throw e;
     }
+};
+
+/**
+ * @param {NestedRecord<string, string>} messages
+ * @returns {Record<string, string>}
+ */
+const generateSmallestLocaleNamesMap = messages => {
+    const result = {
+        [SOURCE_LOCALE]: supportedLocales[SOURCE_LOCALE].name
+    };
+    for (const locale of Object.keys(messages)) {
+        result[locale] = supportedLocales[locale].name;
+    }
+    return result;
 };
 
 const pullGui = async () => {
@@ -239,11 +257,7 @@ const pullPackager = async () => {
     fs.writeFileSync(index, newContent);
 
     // Write locale-names.json
-    // TODO: We should make packager just import this from scratch-l10n
-    const localeNames = {};
-    for (const [locale, {name}] of Object.entries(supportedLocales)) {
-        localeNames[locale] = name;
-    }
+    const localeNames = generateSmallestLocaleNamesMap(translations);
     fs.writeFileSync(pathUtil.join(localesDirectory, 'locale-names.json'), JSON.stringify(localeNames, null, 4));
 };
 
