@@ -226,7 +226,7 @@ const pullGui = async () => {
     fs.writeFileSync(guiTranslationsFile, JSON.stringify(guiTranslations, null, 4));
 
     const addonsTranslationsFile = pathUtil.join(scratchGui, 'src/addons/settings/translations.json');
-    const addonsTranslations = await pullResource('addonsjson', 0.5);
+    const addonsTranslations = await pullResource('addonsjson', 0.7);
     fs.writeFileSync(addonsTranslationsFile, JSON.stringify(addonsTranslations, null, 4));
 };
 
@@ -292,7 +292,7 @@ const pullDesktop = async () => {
     };
 
     // Website translations
-    const webTranslations = await pullResource('desktop-webjson', 0.5);
+    const webTranslations = await pullResource('desktop-webjson', 0.7);
     const localeNames = generateSmallestLocaleNamesMap(webTranslations);
     const indexHtml = pathUtil.join(desktop, 'docs', 'index.html');
     const oldContent = fs.readFileSync(indexHtml, 'utf-8');
