@@ -5,7 +5,7 @@ const SKIP_LOCALES = [
     'es-419'
 ];
 
-/** @type {Record<string, {name: string}>>} */
+/** @type {Record<string, {name: string}>} */
 const supportedLocales = {};
 for (const locale of Object.keys(vanillaLocales).sort()) {
     if (!SKIP_LOCALES.includes(locale)) {
@@ -15,5 +15,5 @@ for (const locale of Object.keys(vanillaLocales).sort()) {
 
 export {
     supportedLocales,
-    localeMap
+    localeMap as scratchToTransifex
 };

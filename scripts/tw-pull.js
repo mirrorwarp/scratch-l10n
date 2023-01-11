@@ -2,15 +2,15 @@
 
 import pathUtil from 'node:path';
 import fs from 'node:fs';
-import {txPull} from '../lib/transifex';
-import {supportedLocales, localeMap} from './tw-locales';
+import {txPull, txGetResourceStatistics} from '../lib/transifex';
+import {supportedLocales, scratchToTransifex} from './tw-locales';
 import {batchMap} from '../lib/batch.js';
+
+/* eslint-disable valid-jsdoc */
 
 const PROJECT = 'turbowarp';
 const CONCURRENCY_LIMIT = 36;
 const SOURCE_LOCALE = 'en';
-
-/* eslint-disable valid-jsdoc */
 
 /**
  * Not sure how to do this in JSDoc
@@ -69,37 +69,100 @@ const removeRedundantMessages = (localeMessages, sourceMessages) => {
 };
 
 /**
- * @param {NestedRecord<string>} messages
- * @returns {number}
+ * @param {string[]} locales
  */
-const countStrings = messages => {
-    let count = 0;
-    for (const string of Object.values(messages)) {
-        if (typeof string === 'string') {
-            count += 1;
-        } else {
-            count += countStrings(string);
-        }
+const createProgressPrinter = locales => {
+    const RESET = `\u001b[0m`;
+    const BOLD = `\u001b[1m`;
+    const GRAY = '\u001b[90m';
+    const BLUE = `\u001b[34m`;
+    const GREEN = '\u001b[32m';
+    const CLEAR = '\u001b[0k';
+
+    const NOT_STARTED = 0;
+    const STARTED = 1;
+    const FINISHED = 2;
+
+    let ended = false;
+    const states = {};
+    for (const locale of locales) {
+        states[locale] = NOT_STARTED;
     }
-    return count;
+
+    const print = () => {
+        if (ended) {
+            return;
+        }
+        const items = Object.entries(states).map(([locale, state]) => {
+            let color = '??';
+            if (state === NOT_STARTED) color = GRAY;
+            if (state === STARTED) color = BLUE;
+            if (state === FINISHED) color = BOLD + GREEN;
+            return `${color}${locale}${RESET}`;
+        });
+        const total = locales.length;
+        const totalFinished = Object.values(states).filter(i => i === FINISHED).length;
+        process.stdout.write(`\r${CLEAR}${items.join(' ')}${RESET} ${totalFinished}/${total}`);
+    };
+
+    const startedItem = locale => {
+        states[locale] = STARTED;
+        print();
+    };
+
+    const finishedItem = locale => {
+        states[locale] = FINISHED;
+        print();
+    };
+
+    const end = () => {
+        ended = true;
+        // Move cursor to own line.
+        console.log('');
+    };
+
+    print();
+    return {
+        startedItem,
+        finishedItem,
+        end
+    };
 };
 
 /**
  * @param {string} resource Name of Transifex resource
- * @param {number} requiredCompletion Number from 0-1 indicating what % of messages must be translated.
- *  Locales that do not meet this threshold are removed.
- * @returns {Promise<Record<string, Record<string, string>>}
+ * @param {number} requiredCompletion Number from 0-1 indicating what % of strings must be translated.
+ *  Locales that do not meet this threshold will not be included in the result.
+ * @returns {Promise<Record<string, Record<string, string>>} Does not include source messages.
  */
 const pullResource = async (resource, requiredCompletion) => {
-    const values = await batchMap(Object.keys(supportedLocales), CONCURRENCY_LIMIT, async locale => {
+    console.log(`Pulling ${resource}...`);
+
+    const transifexStatistics = await txGetResourceStatistics(PROJECT, resource);
+    const totalStrings = transifexStatistics[SOURCE_LOCALE];
+    const threshold = Math.max(1, Math.round(totalStrings * requiredCompletion));
+    const localesToFetch = Object.keys(supportedLocales).filter(locale => {
+        const transifexLocale = scratchToTransifex[locale] || locale;
+        const translatedStrings = transifexStatistics[transifexLocale];
+        if (typeof translatedStrings !== 'number') {
+            throw new Error(`Missing locale ${supportedLocales[locale].name} (${locale}) in ${resource}`);
+        }
+        return translatedStrings >= threshold;
+    });
+
+    const progress = createProgressPrinter(localesToFetch);
+
+    const values = await batchMap(localesToFetch, CONCURRENCY_LIMIT, async locale => {
+        progress.startedItem(locale);
         try {
-            const messages = await txPull(PROJECT, resource, localeMap[locale] || locale);
-            console.log(`Pulled ${locale} for ${resource}`);
+            const messages = await txPull(PROJECT, resource, scratchToTransifex[locale] || locale);
+            progress.finishedItem(locale);
             return {
-                locale,
+                scratchLocale: locale,
                 messages: normalizeMessages(messages)
             };
         } catch (error) {
+            progress.end();
             // Transifex's error messages sometimes lack enough detail, so we will include
             // some extra information.
             console.error(`Could not fetch messages for locale: ${locale}`);
@@ -107,17 +170,16 @@ const pullResource = async (resource, requiredCompletion) => {
         }
     });
 
-    const sourceMessages = values.find(i => i.locale === SOURCE_LOCALE).messages;
-    const threshold = Math.max(1, countStrings(sourceMessages) * requiredCompletion);
-
+    const sourceMessages = values.find(i => i.scratchLocale === SOURCE_LOCALE).messages;
     const result = {};
     for (const pulled of values) {
         const slimmedMessages = removeRedundantMessages(pulled.messages, sourceMessages);
-        if (countStrings(slimmedMessages) >= threshold) {
-            result[pulled.locale.toLowerCase()] = slimmedMessages;
+        if (Object.keys(slimmedMessages).length > 0) {
+            result[pulled.scratchLocale.toLowerCase()] = slimmedMessages;
         }
     }
 
+    progress.end();
     return result;
 };
 

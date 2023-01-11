@@ -4,9 +4,9 @@ This is a modified version of scratch-l10n with translations that aren't used by
 
 ## Scripts
 
-This repository also contains scripts that we use to maintain TurboWarp's translation system. They assume you have a directory laid out with `scratch-l10n`, `scratch-gui`, `turbowarp-desktop`, and `packager` in the same folder.
+This repository also contains scripts that we use to maintain TurboWarp's translations. They assume you have a directory laid out with `scratch-l10n`, `scratch-gui`, `turbowarp-desktop`, and `packager` in the same parent folder.
 
-Download all resources from Transifex:
+Download all translations from Transifex:
 
 ```bash
 npm run tw:pull
@@ -18,7 +18,7 @@ Upload scratch-gui to Transifex:
 npm run tw:push
 ```
 
-Publish to npm:
+Publish minified scratch-l10n to npm:
 
 ```bash
 npm run tw:publish
