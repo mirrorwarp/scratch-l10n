@@ -268,6 +268,7 @@ const pullDesktop = async () => {
         return;
     }
 
+    // Desktop app translations
     const desktopTranslations = await pullResource('desktopjson', 0.5);
     fs.writeFileSync(
         pathUtil.join(desktop, 'src/l10n/translations.json'),
@@ -283,13 +284,22 @@ const pullDesktop = async () => {
         return result;
     };
 
+    // Website translations
     const webTranslations = await pullResource('desktop-webjson', 0.5);
+    const localeNames = generateSmallestLocaleNamesMap(webTranslations);
     const indexHtml = pathUtil.join(desktop, 'docs', 'index.html');
     const oldContent = fs.readFileSync(indexHtml, 'utf-8');
-    const newContent = oldContent.replace(
-        /\/\*===\*\/[\s\S]+\/\*===\*\//m,
-        `/*===*/${semiPrettyPrint(webTranslations)}/*===*/`
-    );
+    const newContent = oldContent
+        .replace(
+            // Inlined translation data go between /*===*/ markers
+            /\/\*===\*\/[\s\S]+\/\*===\*\//m,
+            `/*===*/${semiPrettyPrint(webTranslations)}/*===*/`
+        )
+        .replace(
+            // Inlined locale names go between /*+++*/ markers
+            /\/\*\+\+\+\*\/[\s\S]+\/\*\+\+\+\*\//m,
+            `/*+++*/${JSON.stringify(localeNames)}/*+++*/`
+        );
     fs.writeFileSync(indexHtml, newContent);
 
     // TODO: pull store-listingsyaml
