@@ -59,17 +59,20 @@ if (!isDirectorySync(scratchVm)) throw new Error('Cannot find scratch-vm');
 
 /**
  * @param {string} sourceString
- * @param {string} description
+ * @param {string} [description] Defaults to empty string.
  * @returns {StructuredMessage}
  */
-const makeStructuredMessage = (sourceString, description) => ({
-    string: sourceString,
-    // We set context because that's what we used to use in the past and removing it now would reset translations
-    // However, we also set developer_comment because Transifex makes this string much more visible in the
-    // interface than the context.
-    context: description,
-    developer_comment: description
-});
+const makeStructuredMessage = (sourceString, description) => {
+    description = description || '';
+    return {
+        string: sourceString,
+        // We set context because that's what we used to use in the past and removing it now would reset translations.
+        // However, we also set developer_comment because Transifex makes this string much more visible in the
+        // interface than the context.
+        context: description,
+        developer_comment: description
+    };
+};
 
 /**
  * @returns {{messages: Record<string, StructuredMessage>, allUsedIds: string[]}}
@@ -79,24 +82,33 @@ const parseSourceGuiMessages = () => {
         .filter((file) => file.endsWith('.json'));
 
     const messages = {};
-    const allUsedIds = [];
     for (const file of reactTranslationFiles) {
         const path = pathUtil.join(scratchGuiTranslations, file);
         const json = JSON.parse(fs.readFileSync(path, 'utf-8'));
         for (const {id, defaultMessage, description} of json) {
-            allUsedIds.push(id);
-            if (id.startsWith('tw.')) {
-                messages[id] = makeStructuredMessage(defaultMessage, description);
-            }
+            messages[id] = makeStructuredMessage(defaultMessage, description);
         }
     }
 
-    allUsedIds.sort();
+    return messages;
+};
 
-    return {
-        messages,
-        allUsedIds
-    };
+/**
+ * Parse an object like:
+ * {
+ *   id: 'something',
+ *   description: "something else"
+ * }
+ * @param {string} object
+ * @returns {unknown}
+ */
+const parseJsonLike = object => {
+    const result = {};
+    for (const lineMatch of object.matchAll(/(\w+):[\s\S]*?(?:'|")(.*)(?:'|")/gm)) {
+        const [_, id, value] = lineMatch;
+        result[id] = value;
+    }
+    return result;
 };
 
 /**
@@ -105,21 +117,17 @@ const parseSourceGuiMessages = () => {
 const parseSourceVmMessages = () => {
     // Parse all calls to formatMessage()
     const messages = {};
-    const contents = fs.readFileSync(pathUtil.join(scratchVm, 'src', 'extensions', 'tw', 'index.js'), 'utf-8');
-    for (const formatMatch of contents.matchAll(/formatMessage\({([\s\S]+?)}/g)) {
-        const object = {};
-        for (const lineMatch of formatMatch[1].matchAll(/(\w+): (?:'|")(.*)(?:'|")/g)) {
-            const [_, id, value] = lineMatch;
-            object[id] = value;
+    const extensionDirectory = pathUtil.join(scratchVm, 'src', 'extensions');
+    for (const relativePath of recursiveReadDirectory(extensionDirectory)) {
+        const path = pathUtil.join(extensionDirectory, relativePath);
+        const contents = fs.readFileSync(path, 'utf-8');
+        for (const formatMatch of contents.matchAll(/formatMessage\({([\s\S]+?)}/g)) {
+            const object = parseJsonLike(formatMatch[1]);
+            if (typeof object.id !== 'string' || typeof object.default !== 'string') {
+                throw new Error('Error parsing formatMessage() string; missing either id or default.');
+            }
+            messages[object.id] = makeStructuredMessage(object.default, object.description);
         }
-        if (
-            typeof object.id !== 'string' ||
-            typeof object.default !== 'string' ||
-            typeof object.description !== 'string'
-        ) {
-            throw new Error('Error parsing formatMessage() string.');
-        }
-        messages[object.id] = makeStructuredMessage(object.default, object.description);
     }
     return messages;
 };
@@ -127,22 +135,33 @@ const parseSourceVmMessages = () => {
 const hardcodedMessages = {
     'tw.blocks.openDocs': makeStructuredMessage('Open Documentation', 'Button that opens extension documentation')
 };
-const {messages: guiMessages, allUsedIds} = parseSourceGuiMessages();
+const guiMessages = parseSourceGuiMessages();
 const vmMessages = parseSourceVmMessages();
-const sourceMessages = {
+const allMessages = {
     ...hardcodedMessages,
     ...guiMessages,
     ...vmMessages
 };
 
-fs.writeFileSync(pathUtil.join(__dirname, 'tw-all-used-ids.json'), JSON.stringify(allUsedIds, null, 4));
+const allMessageIds = Object.keys(allMessages).sort();
+fs.writeFileSync(
+    pathUtil.join(__dirname, 'tw-all-used-ids.json'),
+    JSON.stringify(allMessageIds, null, 4)
+);
+
+const twMessages = {};
+for (const [id, message] of Object.entries(allMessages)) {
+    if (id.startsWith('tw.')) {
+        twMessages[id] = message;
+    }
+}
 
 const push = async () => {
     try {
         console.log('UPLOADING to Transifex...');
         const PROJECT = 'turbowarp';
         const RESOURCE = 'guijson';
-        await txPush(PROJECT, RESOURCE, sourceMessages);
+        await txPush(PROJECT, RESOURCE, twMessages);
     } catch (error) {
         console.error(error);
         process.exit(1);
