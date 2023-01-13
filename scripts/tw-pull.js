@@ -204,11 +204,15 @@ const isDirectorySync = path => {
  * @returns {Record<string, string>}
  */
 const generateSmallestLocaleNamesMap = messages => {
+    const lowercaseSupportedLocales = {};
+    for (const [locale, value] of Object.entries(supportedLocales)) {
+        lowercaseSupportedLocales[locale.toLowerCase()] = value;
+    }
     const result = {
         [SOURCE_LOCALE]: supportedLocales[SOURCE_LOCALE].name
     };
     for (const locale of Object.keys(messages)) {
-        result[locale] = supportedLocales[locale].name;
+        result[locale] = lowercaseSupportedLocales[locale].name;
     }
     return result;
 };
@@ -282,30 +286,19 @@ const pullDesktop = async () => {
         JSON.stringify(desktopTranslations, null, 4)
     );
 
-    const semiPrettyPrint = (json) => {
-        let result = '{\n';
-        for (const key of Object.keys(json)) {
-            result += `${JSON.stringify(key)}:${JSON.stringify(json[key])},\n`;
-        }
-        result += '}';
-        return result;
-    };
-
     // Website translations
-    const webTranslations = await pullResource('desktop-webjson', 0.7);
+    const webTranslations = await pullResource('desktopturbowarporg-redesign', 0.7);
     const localeNames = generateSmallestLocaleNamesMap(webTranslations);
     const indexHtml = pathUtil.join(desktop, 'docs', 'index.html');
     const oldContent = fs.readFileSync(indexHtml, 'utf-8');
     const newContent = oldContent
         .replace(
-            // Inlined translation data go between /*===*/ markers
-            /\/\*===\*\/[\s\S]+\/\*===\*\//m,
-            `/*===*/${semiPrettyPrint(webTranslations)}/*===*/`
+            /<script type="generated-translations">[\s\S]+?<\/script>/,
+            `<script type="generated-translations">${JSON.stringify(webTranslations)}</script>`
         )
         .replace(
-            // Inlined locale names go between /*+++*/ markers
-            /\/\*\+\+\+\*\/[\s\S]+\/\*\+\+\+\*\//m,
-            `/*+++*/${JSON.stringify(localeNames)}/*+++*/`
+            /<script type="generated-locale-names">[\s\S]+?<\/script>/,
+            `<script type="generated-locale-names">${JSON.stringify(localeNames)}</script>`
         );
     fs.writeFileSync(indexHtml, newContent);
 
