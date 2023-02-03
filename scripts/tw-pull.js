@@ -293,8 +293,14 @@ const pullDesktop = async () => {
     const oldContent = fs.readFileSync(indexHtml, 'utf-8');
     const newContent = oldContent
         .replace(
-            /<script type="generated-translations">[\s\S]+?<\/script>/,
-            `<script type="generated-translations">${JSON.stringify(webTranslations)}</script>`
+            / *<!-- L10N_START -->[\s\S]*?<!-- L10N_END -->/gm,
+            [
+                '<!-- L10N_START -->',
+                ...Object.entries(webTranslations).map(([locale, data]) => (
+                    `<script type="generated-translations" data-locale="${locale}">${JSON.stringify(data)}</script>`
+                )),
+                '<!-- L10N_END -->'
+            ].map(line => `    ${line}`).join('\n')
         )
         .replace(
             /<script type="generated-locale-names">[\s\S]+?<\/script>/,
