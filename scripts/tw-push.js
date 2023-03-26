@@ -104,6 +104,8 @@ const parseSourceGuiMessages = () => {
  */
 const parseJsonLike = object => {
     const result = {};
+    // Remove comments
+    object = object.replace(/\/\/[^\n]*/g, '');
     for (const lineMatch of object.matchAll(/(\w+):[\s\S]*?(?:'|")(.*)(?:'|")/gm)) {
         const [_, id, value] = lineMatch;
         result[id] = value;
@@ -117,11 +119,11 @@ const parseJsonLike = object => {
 const parseSourceVmMessages = () => {
     // Parse all calls to formatMessage()
     const messages = {};
-    const extensionDirectory = pathUtil.join(scratchVm, 'src', 'extensions');
+    const extensionDirectory = pathUtil.join(scratchVm, 'src');
     for (const relativePath of recursiveReadDirectory(extensionDirectory)) {
         const path = pathUtil.join(extensionDirectory, relativePath);
         const contents = fs.readFileSync(path, 'utf-8');
-        for (const formatMatch of contents.matchAll(/formatMessage\({([\s\S]+?)}/g)) {
+        for (const formatMatch of contents.matchAll(/(?:formatMessage|maybeFormatMessage)\({([\s\S]+?)}/g)) {
             const object = parseJsonLike(formatMatch[1]);
             if (typeof object.id !== 'string' || typeof object.default !== 'string') {
                 throw new Error('Error parsing formatMessage() string; missing either id or default.');
@@ -132,13 +134,9 @@ const parseSourceVmMessages = () => {
     return messages;
 };
 
-const hardcodedMessages = {
-    'tw.blocks.openDocs': makeStructuredMessage('Open Documentation', 'Button that opens extension documentation')
-};
 const guiMessages = parseSourceGuiMessages();
 const vmMessages = parseSourceVmMessages();
 const allMessages = {
-    ...hardcodedMessages,
     ...guiMessages,
     ...vmMessages
 };
