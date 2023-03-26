@@ -1,6 +1,6 @@
 {
-    "general.status": "Filter Projects",
-    "general.languageChooser": "Select Language",
+    "general.status": "Filtro de Proyectos",
+    "general.languageChooser": "Seleccionar Idioma",
     "general.accountSettings": "Configuración de la cuenta",
     "general.about": "Acerca de",
     "general.aboutScratch": "Acerca de Scratch",
@@ -152,6 +152,7 @@
     "registration.cantCreateAccount": "Scratch no pudo crear su cuenta.",
     "registration.checkOutResources": "Comenzar con recursos",
     "registration.checkOutResourcesDescription": "Explorar materiales para educadores y facilitadores escritos por el equipo de Scratch, incluyendo <a href='/educators#resources'>consejos, tutoriales, y guías</a>.",
+    "registration.checkOutResourcesDescriptionHTML": "Explorar materiales para educadores y facilitadores escritos por el equipo de Scratch, incluyendo <a>consejos, tutoriales, y guías</a>.",
     "registration.choosePasswordStepDescription": "Escribe una nueva contraseña para tu cuenta. Deberás utilizar esta contraseña la próxima vez que inicies sesión en Scratch.",
     "registration.choosePasswordStepTitle": "Crear una contraseña",
     "registration.choosePasswordStepTooltip": "No uses tu nombre o algo que sea fácil para que alguien la adivine.",
