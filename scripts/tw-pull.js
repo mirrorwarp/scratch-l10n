@@ -280,9 +280,9 @@ const pullDesktop = async () => {
     }
 
     // Desktop app translations
-    const desktopTranslations = await pullResource('desktopjson', 0.5);
+    const desktopTranslations = await pullResource('desktopnewjson', 0.5);
     fs.writeFileSync(
-        pathUtil.join(desktop, 'src/l10n/translations.json'),
+        pathUtil.join(desktop, 'src-main/l10n/generated-translations.json'),
         JSON.stringify(desktopTranslations, null, 4)
     );
 
