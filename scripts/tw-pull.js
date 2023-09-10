@@ -308,13 +308,11 @@ const pullDesktop = async () => {
         );
     fs.writeFileSync(indexHtml, newContent);
 
-    /*
     const storeListings = await pullResource('store-listingsyaml', 1);
     fs.writeFileSync(
         pathUtil.join(desktop, 'store-listings/imported.json'),
         JSON.stringify(storeListings, null, 4)
     );
-    */
 };
 
 const pullEverything = async () => {
