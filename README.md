@@ -4,7 +4,7 @@ This is a modified version of scratch-l10n with translations that aren't used by
 
 ## Scripts
 
-This repository also contains scripts that we use to maintain TurboWarp's translations. They assume you have a directory laid out with `scratch-l10n`, `scratch-gui`, `turbowarp-desktop`, and `packager` in the same parent folder.
+This repository also contains scripts that we use to maintain TurboWarp's translations. They assume you have a directory laid out with `scratch-l10n`, `scratch-gui`, `mirrorwarp-desktop`, and `packager` in the same parent folder.
 
 Download all translations from Transifex:
 
